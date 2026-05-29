@@ -1,13 +1,13 @@
 [BITS 16]
-[ORG 0]
+[ORG 0x7C00]
 
-.hello_world:
-  mov ax, 0x07C0
+.hello_world: 
+  xor ax, ax
   mov ds, ax
   mov es, ax  
-  mov ax, 0x0500
+  mov ax, 0x50
   mov ss, ax
-  mov sp, 0x07C0
+  mov sp, 0x7C0
   mov bx, msg
   .printing:
     mov al, byte [bx]
