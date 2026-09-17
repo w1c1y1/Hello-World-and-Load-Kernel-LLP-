@@ -3,7 +3,8 @@
 
 %define CODE_OFFSET 0x7C00    ; defining magic consts
 %define HEADS 2
-%define SECTORS 18
+%define SECTORS_PER_TRACK 18
+%define SECTORS_TO_READ 26
 %define SECTOR_SIZE 512
 %define KERNEL_OFFSET 0x7E00
 %define READ_SECTORS 0x2
@@ -22,10 +23,8 @@
   mov cl, 2
   xor ch, ch
   xor dh, dh
-
-
-mov bx, KERNEL_OFFSET        ; points to data we read
-mov si, SECTORS              ; counts how much sectors were read
+  mov bx, KERNEL_OFFSET        ; points to data we read
+  mov si, SECTORS_TO_READ              ; counts how much sectors were read
   
 
 .reading_loop:
@@ -48,12 +47,9 @@ mov si, SECTORS              ; counts how much sectors were read
     jmp .reading_loop        ; and read again
 
 
-infinite_loop:
-  jmp infinite_loop
-
 move_sector:
   inc cl                     ; increment sector
-  cmp cl, SECTORS + 1        ; if less than 18 + 1, just pass
+  cmp cl, SECTORS_PER_TRACK + 1        ; if less than 18 + 1, just pass
   jne .pass
   mov cl, 1
 
@@ -68,9 +64,10 @@ move_sector:
 
 
 disk_reading_error:
-  ret
+  jmp infinite_loop
 
-
+infinite_loop:
+  jmp infinite_loop
 
 times 510-($-$$) db 0
 dw 0xAA55
