@@ -23,8 +23,8 @@
   mov cl, 2
   xor ch, ch
   xor dh, dh
-  mov bx, KERNEL_OFFSET        ; points to data we read
-  mov si, SECTORS_TO_READ              ; counts how much sectors were read
+  mov bx, KERNEL_OFFSET      ; points to data we read
+  mov si, SECTORS_TO_READ    ; counts how much sectors were read
   
 
 .reading_loop:
@@ -64,10 +64,25 @@ move_sector:
 
 
 disk_reading_error:
-  jmp infinite_loop
+  mov bx, error_msg
+  jmp printing
 
 infinite_loop:
   jmp infinite_loop
+
+
+
+printing:
+  mov al, byte [bx]
+  cmp al, 0
+  je infinite_loop
+  mov ah, 0x0E
+  int 0x10
+  inc bx
+  jmp printing
+
+error_msg: db "Reading error!!", 0x0A, 0x0D, 0
+msg: db "Hello, World!", 0x0A, 0x0D, 0
 
 times 510-($-$$) db 0
 dw 0xAA55
