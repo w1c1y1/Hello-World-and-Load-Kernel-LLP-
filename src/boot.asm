@@ -1,76 +1,106 @@
 [BITS 16]
-[ORG 0x7C00]
 
+%ifndef PAYLOAD_SIZE
+  %define PAYLOAD_SIZE 512
+%endif
 %define CODE_OFFSET 0x7C00    ; defining magic consts
 %define HEADS 2
 %define SECTORS_PER_TRACK 18
-%define SECTORS_TO_READ 26
 %define SECTOR_SIZE 512
 %define KERNEL_OFFSET 0x7E00
 %define READ_SECTORS 0x2
+%define SECTORS_TO_READ ((PAYLOAD_SIZE + SECTOR_SIZE - 1) / SECTOR_SIZE)
+%define CODE 0x08
+%define DATA 0x10
 
-
-.segment_placing:
+section .boot
+[GLOBAL booting]
+booting:
   cli
   xor ax, ax
   mov ds, ax
   mov es, ax  
   mov ss, ax
   mov sp, CODE_OFFSET
-  sti
 
-.start_sector_placing:       ; int 0x13 args to default 
-  mov cl, 2
-  xor ch, ch
-  xor dh, dh
+  mov cl, 2                  ; start sector = 2
+  xor ch, ch                 ; start cylinder = 0
+  xor dh, dh                 ; start head = 0
   mov bx, KERNEL_OFFSET      ; points to data we read
   mov si, SECTORS_TO_READ    ; counts how much sectors were read
   
 
-.reading_loop:
+reading_loop:
   cmp si, 0                  ; if all read, then exit 
-  je infinite_loop
-  mov ah, READ_SECTORS       ; number of read from drive command
+  je go_to_C
+  mov ah, 0x2      ; number of read from drive command
   mov al, 1                  ; read one sector at time
   int 0x13                   ; reading service
   jc disk_reading_error
   dec si                     ; sector read
-  add bx, SECTOR_SIZE        ; move to next sector
-  jnc .no_segment_overflow   ; if bx > 64kb => overflow and we need to move ES on 0x1000 = 64kb
-    push ax                  ; save ax
-    mov ax, es               ; move es to ax for change
-    add ax, 0x1000           ; move ax to 64kb further
-    mov es, ax               ; rewrite es
-    pop ax                   ; bring back the old ax value
-  .no_segment_overflow:
-    call move_sector        ; if all good, move to the next sector
-    jmp .reading_loop        ; and read again
+  mov di, es                ; move es to ax for change
+  add di, 0x20              ; move ax to 64kb further
+  mov es, di                ; rewrite es
 
 
 move_sector:
   inc cl                     ; increment sector
-  cmp cl, SECTORS_PER_TRACK + 1        ; if less than 18 + 1, just pass
-  jne .pass
+  cmp cl, 19                 ; if less than 18 + 1, just pass
+  jl reading_loop
   mov cl, 1
 
-  inc dh                     ; increment track
+  inc dh                     ; increment head
   cmp dh, HEADS              ; if less, pass
-  jne .pass
+  jl reading_loop
   mov dh, 0
 
-  inc ch                     ; go to next track
-  .pass:
-    ret
+  inc ch                     ; go to next cylinder
+  jmp reading_loop
 
+go_to_C:
+  lgdt [gdt_descriptor]
+  cld
+  mov eax, CR0
+  or eax, 1
+  mov CR0, eax
+  jmp CODE:next
+  [BITS 32]
+  next:
+    mov ax, DATA
+    mov ds, ax
+    mov es, ax
+    mov fs, ax
+    mov gs, ax
+    mov ss, ax
+
+  [EXTERN kernel_entry]
+  call CODE:kernel_entry
+
+  [GLOBAL endless_loop]
+  endless_loop:
+      jmp $
+
+
+align 8
+gdt:
+  db 0, 0, 0, 0, 0, 0, 0, 0; null
+
+  db 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x9A, 0xCF, 0x00; code
+
+  db 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x92, 0xCF, 0x00; data
+
+
+gdt_descriptor:
+  dw gdt_descriptor - gdt - 1
+  dd gdt
+
+[BITS 16]
+infinite_loop:
+  jmp infinite_loop
 
 disk_reading_error:
   mov bx, error_msg
   jmp printing
-
-infinite_loop:
-  jmp infinite_loop
-
-
 
 printing:
   mov al, byte [bx]
