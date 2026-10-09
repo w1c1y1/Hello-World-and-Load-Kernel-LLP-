@@ -57,6 +57,25 @@ move_sector:
   inc ch                     ; go to next cylinder
   jmp reading_loop
 
+infinite_loop:
+  jmp infinite_loop
+
+disk_reading_error:
+  mov bx, error_msg
+  jmp printing
+
+printing:
+  mov al, byte [bx]
+  cmp al, 0
+  je infinite_loop
+  mov ah, 0x0E
+  int 0x10
+  inc bx
+  jmp printing
+
+error_msg: db "Reading error!!", 0x0A, 0x0D, 0
+msg: db "Hello, World!", 0x0A, 0x0D, 0
+
 go_to_C:
   lgdt [gdt_descriptor]
   cld
@@ -93,26 +112,6 @@ gdt:
 gdt_descriptor:
   dw gdt_descriptor - gdt - 1
   dd gdt
-
-[BITS 16]
-infinite_loop:
-  jmp infinite_loop
-
-disk_reading_error:
-  mov bx, error_msg
-  jmp printing
-
-printing:
-  mov al, byte [bx]
-  cmp al, 0
-  je infinite_loop
-  mov ah, 0x0E
-  int 0x10
-  inc bx
-  jmp printing
-
-error_msg: db "Reading error!!", 0x0A, 0x0D, 0
-msg: db "Hello, World!", 0x0A, 0x0D, 0
 
 times 510-($-$$) db 0
 dw 0xAA55
