@@ -102,12 +102,34 @@ go_to_C:
 
 align 8
 gdt:
+    db 0b00000000 ; null 
+    db 0b00000000
+    db 0b00000000
+    db 0b00000000
+    db 0b00000000
+    db 0b00000000
+    db 0b00000000
+    db 0b00000000
 
-  db 0, 0, 0, 0, 0, 0, 0, 0                        ; null descriptor
+    ; code descriptor
+    db 0b11111111 ; Limit 15-00 => 1
+    db 0b11111111
+    db 0b00000000 ; Base 15:00 => 0
+    db 0b00000000 
+    db 0b00000000 ; Base 23:16 => 0
+    db 0b10011010 ;P = 1, DPL = 00, S = 1, Type = 1010 (Code + Writing)
+    db 0b11001111 ; G = 1, D/B = 1, 0 = 0, AVL = 0, Limit 19:16 = 1111
+    db 0b00000000 ; Base 31:24
 
-  db 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x9A, 0xCF, 0x00; code descriptor
-
-  db 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x92, 0xCF, 0x00; data descriptor
+      ; data descriptor
+    db 0b11111111 ; Limit 15:00
+    db 0b11111111
+    db 0b00000000 ; Base 15:00
+    db 0b00000000
+    db 0b00000000 ; Base 23:16
+    db 0b10010010 ; P = 1, DPL = 00, S = 1, Type = 0010 (Data + Writing)
+    db 0b11001111 ; G = 1, D/B = 1, 0 = 0, AVL = 0, Limit 19:16 = 1111
+    db 0b00000000 ; Base 31:24
 
 
 gdt_descriptor:                ; fake descriptor to load table
