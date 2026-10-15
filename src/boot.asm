@@ -117,7 +117,7 @@ gdt:
     db 0b00000000 ; Base 15:00 => 0
     db 0b00000000 
     db 0b00000000 ; Base 23:16 => 0
-    db 0b10011010 ;P = 1, DPL = 00, S = 1, Type = 1010 (Code + Writing)
+    db 0b10011010 ;P = 1, DPL = 00, S = 1, Type = 1010 (Code + Reading)
     db 0b11001111 ; G = 1, D/B = 1, 0 = 0, AVL = 0, Limit 19:16 = 1111
     db 0b00000000 ; Base 31:24
 
