@@ -77,15 +77,15 @@ error_msg: db "Reading error!!", 0x0A, 0x0D, 0
 msg: db "Hello, World!", 0x0A, 0x0D, 0
 
 go_to_C:
-  lgdt [gdt_descriptor]
-  cld
-  mov eax, CR0
+  lgdt [gdt_descriptor]   ; load gdt
+  cld                     ; clear destination flag
+  mov eax, CR0            ; go to 32 bits
   or eax, 1
   mov CR0, eax
-  jmp CODE:next
+  jmp CODE:next           ; 
   [BITS 32]
   next:
-    mov ax, DATA
+    mov ax, DATA          ; put segments to data
     mov ds, ax
     mov es, ax
     mov fs, ax
@@ -93,25 +93,26 @@ go_to_C:
     mov ss, ax
 
   [EXTERN kernel_entry]
-  call CODE:kernel_entry
+  call CODE:kernel_entry  ; enter C
 
-  [GLOBAL endless_loop]
+  [GLOBAL endless_loop]   ; and freeze
   endless_loop:
       jmp $
 
 
 align 8
 gdt:
-  db 0, 0, 0, 0, 0, 0, 0, 0; null
 
-  db 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x9A, 0xCF, 0x00; code
+  db 0, 0, 0, 0, 0, 0, 0, 0                        ; null descriptor
 
-  db 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x92, 0xCF, 0x00; data
+  db 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x9A, 0xCF, 0x00; code descriptor
+
+  db 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x92, 0xCF, 0x00; data descriptor
 
 
-gdt_descriptor:
-  dw gdt_descriptor - gdt - 1
-  dd gdt
+gdt_descriptor:                ; fake descriptor to load table
+  dw gdt_descriptor - gdt - 1  ; size
+  dd gdt                       ; address
 
 times 510-($-$$) db 0
 dw 0xAA55
